@@ -11,18 +11,17 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class BurialRecord {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private LocalDate burialDate;
     private String notes;
 
     @OneToOne
-    @JoinColumn(name = "deceased_person_id")
+    @JoinColumn(name = "deceased_person_id", unique = true, nullable = false)
     private DeceasedPerson deceasedPerson;
 
     @OneToOne
-    @JoinColumn(name = "grave_plot_id")
+    @JoinColumn(name = "grave_plot_id", unique = true, nullable = false)
     private GravePlot gravePlot;
 }

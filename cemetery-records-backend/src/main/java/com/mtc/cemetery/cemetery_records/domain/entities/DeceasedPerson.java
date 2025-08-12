@@ -1,5 +1,6 @@
 package com.mtc.cemetery.cemetery_records.domain.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mtc.cemetery.cemetery_records.domain.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,7 +17,10 @@ public class DeceasedPerson {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String firstName;
+
+    @Column(nullable = false)
     private String lastName;
 
     private LocalDate dateOfBirth;
@@ -26,5 +30,8 @@ public class DeceasedPerson {
     private Gender gender;
 
     @OneToOne(mappedBy = "deceasedPerson", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @JsonIgnore
     private BurialRecord burialRecord;
 }

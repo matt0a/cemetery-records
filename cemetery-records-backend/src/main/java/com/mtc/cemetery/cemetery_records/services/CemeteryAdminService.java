@@ -27,14 +27,17 @@ public class CemeteryAdminService {
     public BurialBundleResponse createBurialBundle(CreateBurialBundleRequest req) {
         LocalDate dob = req.getDateOfBirth();
         LocalDate dod = req.getDateOfDeath();
-        LocalDate burial = req.getBurialDate();
+        LocalDate burialDate = req.getBurialDate();
 
+        // Basic chronology guards
         if (dob != null && dod != null && dod.isBefore(dob)) {
             throw new IllegalArgumentException("Date of death cannot be before date of birth.");
         }
-        if (burial != null && dod != null && burial.isBefore(dod)) {
+        if (burialDate != null && dod != null && burialDate.isBefore(dod)) {
             throw new IllegalArgumentException("Burial date cannot be before date of death.");
         }
+
+        // Optional duplicate guard (same name+DoD)
         if (dod != null && deceasedRepo.existsByFirstNameIgnoreCaseAndLastNameIgnoreCaseAndDateOfDeath(
                 req.getFirstName(), req.getLastName(), dod)) {
             throw new IllegalArgumentException("A deceased with the same name and date of death already exists.");
@@ -50,43 +53,41 @@ public class CemeteryAdminService {
                 throw new IllegalArgumentException("Either gravePlotId OR (section & plotNumber) must be provided.");
             }
             plot = gravePlotRepo.findBySectionIgnoreCaseAndPlotNumberIgnoreCase(req.getSection(), req.getPlotNumber())
-                    .orElseGet(() -> GravePlot.builder()
-                            .section(req.getSection())
-                            .plotNumber(req.getPlotNumber())
-                            .locationDescription(req.getLocationDescription())
-                            .build());
-            if (plot.getId() == null) {
-                plot = gravePlotRepo.save(plot);
-            }
+                    .orElseGet(() -> gravePlotRepo.save(
+                            GravePlot.builder()
+                                    .section(req.getSection())
+                                    .plotNumber(req.getPlotNumber())
+                                    .locationDescription(req.getLocationDescription())
+                                    .build()
+                    ));
         }
 
-        if (burialRepo.existsByGravePlot_Id(plot.getId())) {
-            throw new IllegalStateException("This grave plot already has a burial record.");
-        }
 
-        DeceasedPerson deceased = DeceasedPerson.builder()
-                .firstName(req.getFirstName())
-                .lastName(req.getLastName())
-                .dateOfBirth(dob)
-                .dateOfDeath(dod)
-                .gender(req.getGender())
-                .build();
-        deceased = deceasedRepo.save(deceased);
+        // Create deceased person
+        DeceasedPerson deceased = deceasedRepo.save(
+                DeceasedPerson.builder()
+                        .firstName(req.getFirstName())
+                        .lastName(req.getLastName())
+                        .dateOfBirth(dob)
+                        .dateOfDeath(dod)
+                        .gender(req.getGender())
+                        .build()
+        );
 
-        BurialRecord burialRecord = BurialRecord.builder()
-                .burialDate(burial)
-                .notes(req.getNotes())
-                .deceasedPerson(deceased)
-                .gravePlot(plot)
-                .build();
+        // Create burial (owning side sets the relationship)
+        BurialRecord burialRecord = burialRepo.save(
+                BurialRecord.builder()
+                        .burialDate(burialDate)
+                        .notes(req.getNotes())
+                        .deceasedPerson(deceased)
+                        .gravePlot(plot)
+                        .build()
+        );
 
-        // wire back if you keep bidirectional references
+        // If DeceasedPerson has a bidirectional @OneToOne to BurialRecord, keep this:
         deceased.setBurialRecord(burialRecord);
-        plot.setBurialRecord(burialRecord);
+        // Do NOT call plot.setBurialRecord(...); plots can have many burials now.
 
-        burialRecord = burialRepo.save(burialRecord);
-
-        // Return via builder (no constructor required)
         return BurialBundleResponse.builder()
                 .deceasedPersonId(deceased.getId())
                 .gravePlotId(plot.getId())

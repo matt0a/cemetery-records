@@ -4,6 +4,7 @@ import com.mtc.cemetery.cemetery_records.domain.entities.DeceasedPerson;
 import com.mtc.cemetery.cemetery_records.repositories.DeceasedPersonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +31,7 @@ public class DeceasedPersonServiceImpl implements DeceasedPersonService {
     }
 
     @Override
+    @Transactional
     public DeceasedPerson update(Long id, DeceasedPerson updated) {
         DeceasedPerson existing = repository.findById(id).orElseThrow();
         updated.setId(existing.getId());
@@ -37,6 +39,7 @@ public class DeceasedPersonServiceImpl implements DeceasedPersonService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
         repository.deleteById(id);
     }

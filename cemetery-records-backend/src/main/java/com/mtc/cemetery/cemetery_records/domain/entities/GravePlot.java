@@ -1,10 +1,11 @@
 package com.mtc.cemetery.cemetery_records.domain.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-
-// imports include jakarta.persistence.*
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -18,6 +19,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"}) // <— add
 public class GravePlot {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,9 +33,8 @@ public class GravePlot {
     @Column(name = "plot_number")
     private String plotNumber;
 
-    @OneToOne(mappedBy = "gravePlot", cascade = CascadeType.ALL)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
+    @OneToMany(mappedBy = "gravePlot", fetch = FetchType.LAZY)
     @JsonIgnore
-    private BurialRecord burialRecord;
+    @ToString.Exclude @EqualsAndHashCode.Exclude
+    private List<BurialRecord> burials = new ArrayList<>();
 }

@@ -29,7 +29,7 @@ public class BurialRecordController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ---- Admin edits (secured by SecurityConfig) ----
+    // ---- Admin edits (secured) ----
     @PatchMapping("/api/admin/burial-records/{id}")
     public ResponseEntity<BurialRecord> patchNotesAndDate(
             @PathVariable Long id,
@@ -43,4 +43,6 @@ public class BurialRecordController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    // NOTE: No DELETE mapping here to avoid ambiguous route with AdminBurialController.
 }

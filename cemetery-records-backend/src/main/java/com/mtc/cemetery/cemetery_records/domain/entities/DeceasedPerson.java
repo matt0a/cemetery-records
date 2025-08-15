@@ -1,6 +1,7 @@
 package com.mtc.cemetery.cemetery_records.domain.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.mtc.cemetery.cemetery_records.domain.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,9 +13,9 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"}) // <— add
 public class DeceasedPerson {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -29,9 +30,8 @@ public class DeceasedPerson {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @OneToOne(mappedBy = "deceasedPerson", cascade = CascadeType.ALL)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
+    @OneToOne(mappedBy = "deceasedPerson")
     @JsonIgnore
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     private BurialRecord burialRecord;
 }

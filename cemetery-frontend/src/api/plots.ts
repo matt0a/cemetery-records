@@ -45,3 +45,18 @@ export async function adminUpdatePlot(id: number, payload: UpdatePlotRequest): P
 export async function adminDeletePlot(id: number): Promise<void> {
     await api.delete(`/api/admin/grave-plots/${id}`)
 }
+
+export async function adminGetAvailablePlots(params?: {
+    section?: string
+    plotNumber?: string
+}) {
+    // simple client-side filter (server returns all “available”)
+    const { data } = await api.get<GravePlot[]>('/api/admin/grave-plots/available')
+    if (!params) return data
+    const s = (params.section ?? '').trim().toLowerCase()
+    const p = (params.plotNumber ?? '').trim().toLowerCase()
+    return data.filter(g =>
+        (!s || (g.section ?? '').toLowerCase().includes(s)) &&
+        (!p || (g.plotNumber ?? '').toLowerCase().includes(p))
+    )
+}

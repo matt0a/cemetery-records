@@ -98,6 +98,12 @@ public class GravePlotController {
         gravePlotRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+    // ---- Admin: available plots (no burials) ----
+    @GetMapping("/api/admin/grave-plots/available")
+    public ResponseEntity<List<GravePlot>> availableAdmin() {
+        return ResponseEntity.ok(gravePlotRepository.findAvailablePlots());
+    }
+
 
 
     // DTO for PATCH

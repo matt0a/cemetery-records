@@ -1,107 +1,145 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { strictSearch, type DeceasedPerson } from '@api/deceased'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { StrictSearchSchema, type StrictSearchValues } from '@/types/schemas'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import Modal from '@components/ui/Modal'
+import EmptyState from '@components/ui/EmptyState'
+import Spinner from '@components/ui/Spinner'
+import { fmtDate } from '@lib/format'
+import {
+    searchPublicDeceased,
+    type SearchValues,
+    type DeceasedPerson,
+} from '@api/deceased'
 
 export default function PublicSearch() {
     const [open, setOpen] = useState(false)
-    const [results, setResults] = useState<DeceasedPerson[]>([])
+    const [values, setValues] = useState<SearchValues>({
+        firstName: '',
+        lastName: '',
+        dateOfBirth: '',
+    })
+    const [submitted, setSubmitted] = useState<SearchValues | null>(null)
 
-    const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
-        useForm<StrictSearchValues>({
-            resolver: zodResolver(StrictSearchSchema),
-            defaultValues: { firstName: '', lastName: '', dateOfBirth: '' },
-        })
+    const canSearch =
+        !!submitted &&
+        !!submitted.firstName &&
+        !!submitted.lastName &&
+        !!submitted.dateOfBirth
 
-    const { mutateAsync } = useMutation({
-        mutationFn: strictSearch,
+    const { data, isFetching, isFetched } = useQuery<DeceasedPerson[]>({
+        queryKey: ['public-search', submitted],
+        queryFn: () => searchPublicDeceased(submitted as SearchValues),
+        enabled: Boolean(canSearch),
     })
 
-    const onSubmit = async (values: StrictSearchValues) => {
-        try {
-            const data = await mutateAsync(values)
-            setResults(data)
-            setOpen(false)
-            if (data.length === 0) toast('No matches found')
-        } catch {
-            toast.error('Search failed')
-        }
-    }
+    const results = (data ?? []) as DeceasedPerson[]
 
     return (
-        <div className="max-w-5xl mx-auto p-4">
-            <div className="flex items-center justify-between mb-4">
-                <h1 className="text-3xl font-semibold text-charcoal">Cemetery Records</h1>
-                <button className="btn-primary" onClick={() => setOpen(true)}>Search</button>
-            </div>
+        <div className="mx-auto max-w-4xl p-4">
+            <div className="card">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-charcoal">Cemetery Records</h1>
+                        <p className="text-sm text-gray-600">
+                            Search by <b>name</b> and <b>date of birth</b> to respect privacy.
+                        </p>
+                    </div>
+                    <button className="btn-primary" onClick={() => setOpen(true)}>
+                        Search records
+                    </button>
+                </div>
 
-            {/* Results */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {results.map((d) => (
-                    <Link
-                        to={`/deceased/${d.id}`}
-                        key={d.id}
-                        className="card hover:shadow-md transition-shadow"
-                    >
-                        <div className="font-semibold">{d.firstName} {d.lastName}</div>
-                        <div className="text-sm text-gray-600">
-                            DOB: {d.dateOfBirth || '—'}{d.dateOfDeath ? ` | DOD: ${d.dateOfDeath}` : ''}
-                        </div>
-                    </Link>
-                ))}
-                {results.length === 0 && (
-                    <div className="text-gray-600">Use the **Search** button to find a record.</div>
+                {!isFetched && (
+                    <EmptyState
+                        title="Start a search"
+                        subtitle="Click the button and enter First name, Last name, and Date of birth."
+                    />
+                )}
+
+                {isFetching && (
+                    <div className="flex items-center gap-2 py-6">
+                        <Spinner /> <span>Searching…</span>
+                    </div>
+                )}
+
+                {isFetched && !isFetching && (
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        {results.length === 0 && (
+                            <EmptyState title="No results" subtitle="Try adjusting the name or date of birth." />
+                        )}
+                        {results.map((d) => (
+                            <Link
+                                key={d.id}
+                                to={`/deceased/${d.id}`}
+                                className="card transition-shadow hover:shadow-md"
+                            >
+                                <div className="font-semibold">
+                                    {d.firstName} {d.lastName}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    DOB: {fmtDate(d.dateOfBirth)} · DOD: {fmtDate(d.dateOfDeath)}
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
                 )}
             </div>
 
             {/* Modal */}
-            {open && (
-                <div className="fixed inset-0 z-50">
-                    <div
-                        className="absolute inset-0 bg-black/30"
-                        onClick={() => { setOpen(false); reset() }}
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5">
-                            <div className="flex items-center justify-between mb-3">
-                                <h2 className="text-xl font-semibold text-charcoal">Search Records</h2>
-                                <button className="btn" onClick={() => { setOpen(false); reset() }}>Close</button>
-                            </div>
-
-                            <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
-                                <div>
-                                    <label className="block mb-1">First Name</label>
-                                    <input className="input" {...register('firstName')} />
-                                    {errors.firstName && <p className="text-red-600 text-sm">{errors.firstName.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block mb-1">Last Name</label>
-                                    <input className="input" {...register('lastName')} />
-                                    {errors.lastName && <p className="text-red-600 text-sm">{errors.lastName.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block mb-1">Date of Birth</label>
-                                    <input className="input" type="date" {...register('dateOfBirth')} />
-                                    {errors.dateOfBirth && <p className="text-red-600 text-sm">{errors.dateOfBirth.message}</p>}
-                                </div>
-
-                                <div className="flex gap-2 pt-1">
-                                    <button className="btn" type="button" onClick={() => reset()}>
-                                        Clear
-                                    </button>
-                                    <button className="btn-primary ml-auto" disabled={isSubmitting}>
-                                        {isSubmitting ? 'Searching…' : 'Search'}
-                                    </button>
-                                </div>
-                            </form>
+            <Modal
+                open={open}
+                onOpenChange={setOpen}
+                title="Secure search"
+                description="Enter an exact match for first name, last name, and date of birth."
+            >
+                <form
+                    className="space-y-3"
+                    onSubmit={(e) => {
+                        e.preventDefault()
+                        setSubmitted(values)
+                        setOpen(false)
+                    }}
+                >
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <label className="mb-1 block text-sm">First name</label>
+                            <input
+                                className="input"
+                                value={values.firstName}
+                                onChange={(e) => setValues((v) => ({ ...v, firstName: e.target.value }))}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-sm">Last name</label>
+                            <input
+                                className="input"
+                                value={values.lastName}
+                                onChange={(e) => setValues((v) => ({ ...v, lastName: e.target.value }))}
+                                required
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="mb-1 block text-sm">Date of birth</label>
+                            <input
+                                type="date"
+                                className="input w-full"
+                                value={values.dateOfBirth}
+                                onChange={(e) => setValues((v) => ({ ...v, dateOfBirth: e.target.value }))}
+                                required
+                            />
                         </div>
                     </div>
-                </div>
-            )}
+                    <div className="flex justify-end gap-2">
+                        <button type="button" className="btn" onClick={() => setOpen(false)}>
+                            Cancel
+                        </button>
+                        <button className="btn-primary" type="submit">
+                            Search
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     )
 }

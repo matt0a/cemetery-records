@@ -10,6 +10,7 @@ import PlotCreate from '@pages/admin/PlotCreate'
 import PlotList from '@pages/admin/PlotList'
 import PeopleList from '@pages/admin/PeopleList'
 import ProtectedRoute from '@features/auth/ProtectedRoute'
+import AvailablePlots from '@pages/admin/AvailablePlots'
 
 export default function App() {
     return (
@@ -33,6 +34,7 @@ export default function App() {
                 <Route path="burials" element={<BurialList />} />
                 <Route path="burials/new" element={<BurialCreate />} />
                 <Route path="plots/new" element={<PlotCreate />} />
+                <Route path="/admin/plots/available" element={<AvailablePlots />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />

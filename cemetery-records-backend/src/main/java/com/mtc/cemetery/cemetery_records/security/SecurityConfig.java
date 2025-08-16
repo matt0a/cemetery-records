@@ -40,34 +40,43 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // CORS preflight
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Public / docs
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                        .requestMatchers("/error", "/actuator/health").permitAll()
+
+                        // Auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll() // public read-only
+
+                        // Public reads
+                        .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
+
+                        // Everything else requires auth
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) ->
-                        res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")))
+                .exceptionHandling(e -> e.authenticationEntryPoint(
+                        (req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
+                ))
                 .build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-
-        // allow your Vite app(s)
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "http://localhost:4173",        // vite preview (optional)
-                "http://127.0.0.1:4173"         // vite preview (optional)
+                "http://localhost:4173",
+                "http://127.0.0.1:4173"
         ));
-
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","Origin","X-Requested-With"));
-        config.setExposedHeaders(List.of("Location")); // optional, if you return Location on create
-        config.setAllowCredentials(true); // fine even with Bearer tokens
+        config.setExposedHeaders(List.of("Location"));
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

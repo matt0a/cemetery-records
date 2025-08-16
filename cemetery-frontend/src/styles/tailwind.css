@@ -4,8 +4,10 @@
 
 /* Put your custom utilities/components inside a layer */
 @layer components {
-    .card { @apply bg-white rounded-2xl shadow p-4; }
-    .btn { @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 font-medium border; }
-    .btn-primary { @apply btn bg-primary text-white border-transparent hover:opacity-90; }
-    .input { @apply w-full rounded-2xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary; }
+    .btn { @apply inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50 transition; }
+    .btn-primary { @apply inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition; }
+    .btn-danger { @apply inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 transition; }
+    .input { @apply w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500; }
+    .card { @apply rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5; }
+    .text-charcoal { @apply text-gray-900; }
 }

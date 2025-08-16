@@ -1,12 +1,14 @@
 import api from './axios'
 
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
+
 export type DeceasedPerson = {
     id: number
     firstName: string
     lastName: string
     dateOfBirth?: string
     dateOfDeath?: string
-    gender?: 'MALE' | 'FEMALE' | 'OTHER'
+    gender?: Gender
 }
 
 export type DeceasedDetail = {
@@ -15,7 +17,7 @@ export type DeceasedDetail = {
     lastName: string
     dateOfBirth?: string
     dateOfDeath?: string
-    gender?: 'MALE' | 'FEMALE' | 'OTHER'
+    gender?: Gender
     burialDate?: string
     gravePlot?: {
         id: number
@@ -25,14 +27,32 @@ export type DeceasedDetail = {
     } | null
 }
 
+/** Re-used by search & UI */
+export type SearchValues = {
+    firstName: string
+    lastName: string
+    dateOfBirth: string // ISO yyyy-mm-dd
+}
+
+/** Helper so the public search always returns an array */
+function normalizeArray<T>(data: T | T[] | null | undefined): T[] {
+    return Array.isArray(data) ? data : data ? [data] : []
+}
+
 /** ---------- PUBLIC ---------- */
 
-export async function strictSearch(params: {
-    firstName: string; lastName: string; dateOfBirth: string
-}): Promise<DeceasedPerson[]> {
-    const res = await api.get<DeceasedPerson[] | DeceasedPerson>('/api/public/deceased-persons/search', { params })
-    const payload = res.data as any
-    return Array.isArray(payload) ? payload : payload ? [payload] : []
+/** Your existing strict search (kept) */
+export async function strictSearch(params: SearchValues): Promise<DeceasedPerson[]> {
+    const res = await api.get<DeceasedPerson[] | DeceasedPerson>(
+        '/api/public/deceased-persons/search',
+        { params }
+    )
+    return normalizeArray(res.data)
+}
+
+/** Alias with the name the screens import */
+export async function searchPublicDeceased(params: SearchValues): Promise<DeceasedPerson[]> {
+    return strictSearch(params)
 }
 
 export async function getDeceasedDetail(id: number): Promise<DeceasedDetail> {
@@ -40,18 +60,26 @@ export async function getDeceasedDetail(id: number): Promise<DeceasedDetail> {
     return data
 }
 
+/** Alias with the name the detail page imports */
+export async function getDeceasedById(id: number): Promise<DeceasedDetail> {
+    return getDeceasedDetail(id)
+}
+
 /** ---------- ADMIN ---------- */
 
-export type UpdatePersonRequest = Partial<Pick<DeceasedPerson,
-    'firstName' | 'lastName' | 'dateOfBirth' | 'dateOfDeath' | 'gender'
->>
+export type UpdatePersonRequest = Partial<
+    Pick<DeceasedPerson, 'firstName' | 'lastName' | 'dateOfBirth' | 'dateOfDeath' | 'gender'>
+>
 
 export async function adminSearchPeople(q: string): Promise<DeceasedPerson[]> {
     const { data } = await api.get<DeceasedPerson[]>('/api/admin/deceased-persons', { params: { q } })
     return data
 }
 
-export async function adminUpdatePerson(id: number, payload: UpdatePersonRequest): Promise<DeceasedPerson> {
+export async function adminUpdatePerson(
+    id: number,
+    payload: UpdatePersonRequest
+): Promise<DeceasedPerson> {
     const { data } = await api.patch<DeceasedPerson>(`/api/admin/deceased-persons/${id}`, payload)
     return data
 }
